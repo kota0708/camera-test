@@ -57,7 +57,7 @@ class Camera {
 
         console.log(exif);
 
-        this.$$canvas.width = 400;
+        this.$$canvas.width = 1000;
         this.$$canvas.height = this.$$canvas.width * imgAspect;
 
         this.canvasWidth = this.$$canvas.width;
@@ -123,21 +123,39 @@ class Camera {
   }
 
   onClickCopy() {
-    console.log(this.stageCopy);
+    const image = new Image();
 
-    this.bitmap.sourceRect = {
-      x: this.canvasWidth / 2,
-      y: this.canvasHeight / 2,
-      width: this.canvasWidth / 2,
-      height: this.canvasHeight / 2
+    const ctx = this.$$canvasCopy.getContext('2d');
+    const testImage = this.$$canvas.toDataURL('image/png');
+
+    this.$$canvasCopy.width = 400;
+    this.$$canvasCopy.height = 400;
+
+    image.src = testImage;
+
+    const parentWidth = this.canvasWidth / 2;
+    const parentHeight = this.canvasHeight / 2;
+
+    const childWidth = this.$$canvasCopy.width / 2;
+    const childtHeight = this.$$canvasCopy.height / 2;
+
+    ctx.beginPath();
+    ctx.arc(childWidth, childtHeight, childWidth, 0, Math.PI * 2, false);
+    ctx.clip();
+
+    image.onload = () => {
+      ctx.drawImage(
+        image,
+        parentWidth - childWidth,
+        parentHeight - childtHeight,
+        this.$$canvasCopy.width,
+        this.$$canvasCopy.height,
+        0,
+        0,
+        this.$$canvasCopy.width,
+        this.$$canvasCopy.height
+      );
     };
-
-    this.$$canvasCopy.width = this.canvasWidth / 2;
-    this.$$canvasCopy.height = this.canvasHeight / 2;
-
-    this.stageCopy.addChild(this.bitmap);
-
-    this.stageCopy.update();
   }
 
   base64ToArrayBuffer(base64) {
