@@ -5,10 +5,15 @@ class Camera {
   constructor() {
     this.$$file = document.getElementById('js-file');
     this.$$canvas = document.getElementById('js-canvas');
+    this.$$canvasCopy = document.getElementById('js-canvas-copy');
+
+    this.$$buttonCopy = document.getElementById('js-button-coppy');
 
     this.onInputImage = this.onInputImage.bind(this);
+    this.onClickCopy = this.onClickCopy.bind(this);
 
     this.stage = null;
+    this.stageCopy = null;
     this.bitmap = null;
 
     this.canvasWidth = 0;
@@ -25,27 +30,18 @@ class Camera {
 
   onListener() {
     this.$$file.addEventListener('change', this.onInputImage);
+    this.$$buttonCopy.addEventListener('click', this.onClickCopy);
   }
 
   onInputImage(e) {
     const files = e.target.files[0]; // ファイル情報を取得
-
     if (!files) {
       return;
     }
 
-    /**
-     * 画像の向きを取得
-     * orientationの情報は下記のサイトがわかりやすかった
-     * @link https://qiita.com/zaru/items/0ce7757c721ebd170683
-     */
-    // let orientation;
-
     const image = new Image();
     const newImage = new Image();
     const fr = new FileReader();
-
-    console.log('files', files);
 
     fr.readAsDataURL(files); // ファイル情報を読み込む
 
@@ -81,6 +77,7 @@ class Camera {
 
         newImage.onload = () => {
           this.stage = new createjs.Stage(this.$$canvas);
+          this.stageCopy = new createjs.Stage(this.$$canvasCopy);
 
           this.bitmap = new createjs.Bitmap(newImage);
 
@@ -94,7 +91,11 @@ class Camera {
           this.bitmap.regX = x;
           this.bitmap.regY = y;
 
-          this.bitmap.rotation = 90;
+          // this.bitmap.rotation = 90;
+
+          // const shape = new createjs.Shape();
+
+          // const rect = shape.graphics.drawPolyStar(0, 0, 75, 5, 0.6, -90);
 
           this.stage.addChild(this.bitmap);
           this.stage.update();
@@ -115,6 +116,10 @@ class Camera {
         // }
       };
     };
+  }
+
+  onClickCopy() {
+    console.log('copy');
   }
 
   base64ToArrayBuffer(base64) {

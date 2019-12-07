@@ -7,7 +7,9 @@ block vars
 block main
   .camera-wrap
     .camera-inner
-      label
-        p iPhoneで縦向きに撮った写真を選択してください。
-        input#js-file(type='file', name='file')
-        canvas#js-canvas.test-canvas
+      p iPhoneで縦向きに撮った写真を選択してください。
+      button#js-button-coppy.test-button
+        | コピーするよー
+      input#js-file.test-input(type='file', name='file')
+      canvas#js-canvas.test-canvas
+      canvas#js-canvas-copy.test-canvas

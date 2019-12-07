@@ -4,7 +4,13 @@
 $test: #fff;
 
 .test-canvas {
-  width: 500px;
-  height: 600px;
   display: block;
+}
+
+.test-input {
+  display: block;
+}
+
+.test-button {
+  margin-bottom: 100px;
 }
