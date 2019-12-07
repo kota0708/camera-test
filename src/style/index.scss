@@ -1,0 +1,16 @@
+@import '../shared/styles/import';
+@import '../shared/icons/css/icons';
+
+$test: #fff;
+
+.test-canvas {
+  display: block;
+}
+
+.test-input {
+  display: block;
+}
+
+.test-button {
+  margin-bottom: 100px;
+}
