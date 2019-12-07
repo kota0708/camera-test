@@ -27,7 +27,8 @@ class Camera {
 
     this.scall = 1;
 
-    this.isFirstPan = false;
+    this.isStartPan = false;
+    this.isStartPinch = false;
 
     this.mc = new Hammer(this.$$canvas);
 
@@ -50,8 +51,12 @@ class Camera {
     this.mc.on('pan pinch', e => {
       console.log(e);
 
-      if (e.type === 'pinch') {
+      if (e.type === 'pinch' && !this.isStartPan) {
         window.clearTimeout(this.timerPinch);
+
+        if (!this.isStartPinch) {
+          this.isStartPinch = !this.isStartPinch;
+        }
 
         const scale = Math.max(0.999, Math.min(this.scall * e.scale, 4));
 
@@ -60,18 +65,19 @@ class Camera {
 
         this.timerPinch = window.setTimeout(() => {
           this.scall = scale;
+          this.isStartPinch = false;
         }, 300);
 
         this.stage.addChild(this.bitmap);
         this.stage.update();
       }
 
-      if (e.type === 'pan') {
-        if (!this.isFirstPan) {
+      if (e.type === 'pan' && !this.isStartPinch) {
+        if (!this.isStartPan) {
           this.startX = this.bitmap.x;
           this.startY = this.bitmap.y;
 
-          this.isFirstPan = true;
+          this.isStartPan = true;
         }
 
         window.clearTimeout(this.timerPen);
@@ -108,11 +114,11 @@ class Camera {
         this.bitmap.y = dy;
 
         if (e.isFinal) {
-          this.isFirstPan = false;
+          this.isStartPan = false;
         }
 
         this.timerPen = window.setTimeout(() => {
-          this.isFirstPan = false;
+          this.isStartPan = false;
         }, 300);
 
         this.stage.addChild(this.bitmap);
@@ -183,25 +189,27 @@ class Camera {
 
           // this.bitmap.rotation = 90;
 
+          if (exif && exif.Orientation) {
+            switch (exif.Orientation) {
+              case 3:
+                this.bitmap.rotation = 180;
+                break;
+              case 6:
+                this.bitmap.rotation = 90;
+                break;
+              case 8:
+                this.bitmap.rotation = -90;
+                break;
+              default:
+                this.bitmap.rotation = 0;
+            }
+          }
+
           this.stage.addChild(this.bitmap);
           this.stage.update();
           // this.stageCopy.addChild(this.bitmap);
           // this.stageCopy.update();
         };
-
-        // if (exif && exif.Orientation) {
-        //   switch (exif.Orientation) {
-        //     case 3:
-        //       rotate = 180;
-        //       break;
-        //     case 6:
-        //       rotate = 90;
-        //       break;
-        //     case 8:
-        //       rotate = -90;
-        //       break;
-        //   }
-        // }
       };
     };
   }
