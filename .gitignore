@@ -4,3 +4,4 @@ node_modules/
 production/
 yarn-error.log/
 dist/
+docs/

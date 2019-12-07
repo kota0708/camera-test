@@ -1,15 +1,133 @@
-const embedImageTag = dataURL => {
-  const img = new Image();
-  img.src = dataURL;
-  img.width = '200';
-  document.body.appendChild(img);
-};
+import EXIF from 'exif-js';
+import { createjs } from '@createjs/easeljs/dist/easeljs.min.js';
 
-document.getElementById('js-file').addEventListener('change', e => {
-  const file = e.target.files[0];
-  const reader = new FileReader();
-  reader.addEventListener('load', () => {
-    embedImageTag(reader.result);
-  });
-  reader.readAsDataURL(file);
-});
+class Camera {
+  constructor() {
+    this.$$file = document.getElementById('js-file');
+    this.$$canvas = document.getElementById('js-canvas');
+
+    this.onInputImage = this.onInputImage.bind(this);
+
+    this.stage = null;
+    this.bitmap = null;
+
+    this.canvasWidth = 0;
+    this.canvasHeight = 0;
+    this.imgWidth = 0;
+    this.imgHeight = 0;
+
+    console.log(EXIF);
+  }
+
+  init() {
+    this.onListener();
+  }
+
+  onListener() {
+    this.$$file.addEventListener('change', this.onInputImage);
+  }
+
+  onInputImage(e) {
+    const files = e.target.files[0]; // ファイル情報を取得
+
+    if (!files) {
+      return;
+    }
+
+    /**
+     * 画像の向きを取得
+     * orientationの情報は下記のサイトがわかりやすかった
+     * @link https://qiita.com/zaru/items/0ce7757c721ebd170683
+     */
+    // let orientation;
+
+    const image = new Image();
+    const newImage = new Image();
+    const fr = new FileReader();
+
+    console.log('files', files);
+
+    fr.readAsDataURL(files); // ファイル情報を読み込む
+
+    fr.onload = evt => {
+      image.src = evt.target.result; // base64
+
+      image.onload = () => {
+        const arrayBuffer = this.base64ToArrayBuffer(image.src);
+        const exif = EXIF.readFromBinaryFile(arrayBuffer);
+
+        // 画像の高さ / 画像の幅
+        const imgAspect = image.naturalHeight / image.naturalWidth;
+
+        console.log(exif);
+
+        this.$$canvas.width = 400;
+        this.$$canvas.height = this.$$canvas.width * imgAspect;
+
+        this.canvasWidth = this.$$canvas.width;
+        this.canvasHeight = this.$$canvas.height;
+
+        console.log('imgAspect', imgAspect);
+        console.log('image.naturalWidth', image.naturalWidth);
+        console.log('image.naturalHeight', image.naturalHeight);
+
+        const ctx = this.$$canvas.getContext('2d');
+        ctx.drawImage(image, 0, 0, this.canvasWidth, this.canvasHeight);
+
+        newImage.src = this.$$canvas.toDataURL('image/png');
+
+        // ctx.transform(-1, 0, 0, 1, this.$$canvas.width, this.$$canvas.height);
+        // ctx.rotate((-90 * Math.PI) / 180);
+
+        newImage.onload = () => {
+          this.stage = new createjs.Stage(this.$$canvas);
+
+          this.bitmap = new createjs.Bitmap(newImage);
+
+          const x = this.bitmap.getBounds().width / 2;
+          const y = this.bitmap.getBounds().height / 2;
+
+          console.log(this.bitmap.getBounds().width);
+
+          this.bitmap.x = x;
+          this.bitmap.y = y;
+          this.bitmap.regX = x;
+          this.bitmap.regY = y;
+
+          this.bitmap.rotation = 90;
+
+          this.stage.addChild(this.bitmap);
+          this.stage.update();
+        };
+
+        // if (exif && exif.Orientation) {
+        //   switch (exif.Orientation) {
+        //     case 3:
+        //       rotate = 180;
+        //       break;
+        //     case 6:
+        //       rotate = 90;
+        //       break;
+        //     case 8:
+        //       rotate = -90;
+        //       break;
+        //   }
+        // }
+      };
+    };
+  }
+
+  base64ToArrayBuffer(base64) {
+    base64 = base64.replace(/^data\:([^\;]+)\;base64,/gim, '');
+    const binaryString = atob(base64);
+    const len = binaryString.length;
+    const bytes = new Uint8Array(len);
+    for (let i = 0; i < len; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
+    }
+    return bytes.buffer;
+  }
+}
+
+const camera = new Camera();
+camera.init();

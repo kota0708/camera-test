@@ -5,9 +5,9 @@
   "scripts": {
     "start": "yarn dev",
     "dev": "gulp build:dev",
-    "prebuild": "rimraf ./production",
-    "build": "cross-env NODE_ENV=production gulp build",
-    "browser": "browser-sync start -s 'production'",
+    "prebuild": "rimraf ./docs",
+    "build": "cross-env NODE_ENV=docs gulp build",
+    "browser": "browser-sync start -s 'docs'",
     "iconfont": "gulp iconfont:build && yarn lint:style",
     "lint:html": "gulp pug:lint",
     "lint:script": "eslint --fix --ext .js --ignore-path .gitignore .",
@@ -96,8 +96,10 @@
     "webpack-merge": "^4.2.1"
   },
   "dependencies": {
+    "@createjs/easeljs": "^2.0.0-beta.4",
     "awesome-sass-easing": "^1.1.2",
     "axios": "^0.19.0",
+    "exif-js": "^2.3.0",
     "glob": "^7.1.4",
     "gsap": "^2.1.3",
     "ress": "^1.2.2"
