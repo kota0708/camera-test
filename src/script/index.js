@@ -5,7 +5,7 @@ class Camera {
   constructor() {
     this.$$file = document.getElementById('js-file');
     this.$$canvas = document.getElementById('js-canvas');
-    this.$$canvasCopy = document.getElementById('js-canvas-copy');
+    this.$$canvasCopy = document.getElementById('js-copy');
 
     this.$$buttonCopy = document.getElementById('js-button-coppy');
 
@@ -79,6 +79,8 @@ class Camera {
           this.stage = new createjs.Stage(this.$$canvas);
           this.stageCopy = new createjs.Stage(this.$$canvasCopy);
 
+          console.log(this.stageCopy);
+
           this.bitmap = new createjs.Bitmap(newImage);
 
           const x = this.bitmap.getBounds().width / 2;
@@ -99,6 +101,8 @@ class Camera {
 
           this.stage.addChild(this.bitmap);
           this.stage.update();
+          // this.stageCopy.addChild(this.bitmap);
+          // this.stageCopy.update();
         };
 
         // if (exif && exif.Orientation) {
@@ -119,7 +123,21 @@ class Camera {
   }
 
   onClickCopy() {
-    console.log('copy');
+    console.log(this.stageCopy);
+
+    this.bitmap.sourceRect = {
+      x: this.canvasWidth / 2,
+      y: this.canvasHeight / 2,
+      width: this.canvasWidth / 2,
+      height: this.canvasHeight / 2
+    };
+
+    this.$$canvasCopy.width = this.canvasWidth / 2;
+    this.$$canvasCopy.height = this.canvasHeight / 2;
+
+    this.stageCopy.addChild(this.bitmap);
+
+    this.stageCopy.update();
   }
 
   base64ToArrayBuffer(base64) {
