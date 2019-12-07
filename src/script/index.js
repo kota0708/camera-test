@@ -1,5 +1,6 @@
 import EXIF from 'exif-js';
 import { createjs } from '@createjs/easeljs/dist/easeljs.min.js';
+import Hammer from 'hammerjs';
 
 class Camera {
   constructor() {
@@ -21,16 +22,103 @@ class Camera {
     this.imgWidth = 0;
     this.imgHeight = 0;
 
+    this.startX = 0;
+    this.startY = 0;
+
+    this.scall = 1;
+
+    this.isFirstPan = false;
+
+    this.mc = new Hammer(this.$$canvas);
+
+    this.timerPinch = -1;
+    this.timerPen = -1;
+
     console.log(EXIF);
   }
 
   init() {
     this.onListener();
+    this.mc.get('pinch').set({ enable: true });
+    this.mc.get('pan').set({ threshold: 1 });
   }
 
   onListener() {
     this.$$file.addEventListener('change', this.onInputImage);
     this.$$buttonCopy.addEventListener('click', this.onClickCopy);
+
+    this.mc.on('pan pinch', e => {
+      console.log(e);
+
+      if (e.type === 'pinch') {
+        window.clearTimeout(this.timerPinch);
+
+        const scale = Math.max(0.999, Math.min(this.scall * e.scale, 4));
+
+        this.bitmap.scaleX = scale;
+        this.bitmap.scaleY = scale;
+
+        this.timerPinch = window.setTimeout(() => {
+          this.scall = scale;
+        }, 300);
+
+        this.stage.addChild(this.bitmap);
+        this.stage.update();
+      }
+
+      if (e.type === 'pan') {
+        if (!this.isFirstPan) {
+          this.startX = this.bitmap.x;
+          this.startY = this.bitmap.y;
+
+          this.isFirstPan = true;
+        }
+
+        window.clearTimeout(this.timerPen);
+
+        let dx;
+        let dy;
+
+        // const getlimitX = this.canvasWidth;
+        // const getlimitY = this.canvasHeight;
+        // const isPlus = num => !!(Math.sign(num) === 1);
+
+        // if (
+        //   (this.startX + e.deltaX > getlimitX && isPlus(e.deltaX)) ||
+        //   (this.startX - e.deltaX < 0 && !isPlus(e.deltaX))
+        // ) {
+        //   return;
+        // } else {
+        //   dx = this.startX + e.deltaX;
+        // }
+
+        // if (
+        //   (this.startY + e.deltaY > getlimitY && isPlus(e.deltaY)) ||
+        //   (this.startY - e.deltaY < 0 && !isPlus(e.deltaY))
+        // ) {
+        //   return;
+        // } else {
+        //   dy = this.startY + e.deltaY;
+        // }
+
+        dx = this.startX + e.deltaX;
+        dy = this.startY + e.deltaY;
+
+        this.bitmap.x = dx;
+        this.bitmap.y = dy;
+
+        if (e.isFinal) {
+          this.isFirstPan = false;
+        }
+
+        this.timerPen = window.setTimeout(() => {
+          this.isFirstPan = false;
+        }, 300);
+
+        this.stage.addChild(this.bitmap);
+        this.stage.update();
+      }
+    });
   }
 
   onInputImage(e) {
@@ -57,7 +145,7 @@ class Camera {
 
         console.log(exif);
 
-        this.$$canvas.width = 1000;
+        this.$$canvas.width = 500;
         this.$$canvas.height = this.$$canvas.width * imgAspect;
 
         this.canvasWidth = this.$$canvas.width;
@@ -95,10 +183,6 @@ class Camera {
 
           // this.bitmap.rotation = 90;
 
-          // const shape = new createjs.Shape();
-
-          // const rect = shape.graphics.drawPolyStar(0, 0, 75, 5, 0.6, -90);
-
           this.stage.addChild(this.bitmap);
           this.stage.update();
           // this.stageCopy.addChild(this.bitmap);
@@ -128,8 +212,8 @@ class Camera {
     const ctx = this.$$canvasCopy.getContext('2d');
     const testImage = this.$$canvas.toDataURL('image/png');
 
-    this.$$canvasCopy.width = 400;
-    this.$$canvasCopy.height = 400;
+    this.$$canvasCopy.width = 300;
+    this.$$canvasCopy.height = 300;
 
     image.src = testImage;
 
@@ -138,6 +222,8 @@ class Camera {
 
     const childWidth = this.$$canvasCopy.width / 2;
     const childtHeight = this.$$canvasCopy.height / 2;
+
+    console.log(parentWidth - childWidth);
 
     ctx.beginPath();
     ctx.arc(childWidth, childtHeight, childWidth, 0, Math.PI * 2, false);
