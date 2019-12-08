@@ -66,6 +66,7 @@ class Camera {
    * @param {Event} e Hummer.jsのイベント
    */
   onPith(e) {
+    // typeがpinchかつpanが動作してない場合
     if (e.type === 'pinch' && !this.isStartPan) {
       window.clearTimeout(this.timerPinch);
 
