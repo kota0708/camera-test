@@ -56,98 +56,116 @@ class Camera {
     this.$$buttonCopy.addEventListener('click', this.onClickCopy);
 
     this.mc.on('pan pinch', e => {
-      // typeがpinchかつpanが動作してない場合
-      if (e.type === 'pinch' && !this.isStartPan) {
-        window.clearTimeout(this.timerPinch);
-
-        if (!this.isStartPinch) {
-          this.isStartPinch = !this.isStartPinch;
-        }
-
-        // 0.999 ~ 4までスケール
-        const scale = Math.max(
-          minScall,
-          Math.min(this.scall * e.scale, maxScall)
-        );
-
-        // 画像を拡大
-        this.bitmap.scaleX = scale;
-        this.bitmap.scaleY = scale;
-
-        // ある程度時間がたったらpinchを終了
-        this.timerPinch = window.setTimeout(() => {
-          this.scall = scale;
-          this.isStartPinch = false;
-        }, 300);
-
-        this.stage.addChild(this.bitmap);
-        this.stage.update();
-      }
-
-      // typeがpenかつpinchが動作してない場合
-      if (e.type === 'pan' && !this.isStartPinch) {
-        // 初回のみ
-        if (!this.isStartPan) {
-          // 前回やった画像の位置を格納
-          this.startX = this.bitmap.x;
-          this.startY = this.bitmap.y;
-
-          this.isStartPan = true;
-        }
-
-        window.clearTimeout(this.timerPen);
-
-        let dx; // 画像の移動値x
-        let dy; // 画像の移動値y
-
-        // const getlimitX = this.canvasWidth;
-        // const getlimitY = this.canvasHeight;
-        // const isPlus = num => !!(Math.sign(num) === 1);
-
-        // if (
-        //   (this.startX + e.deltaX > getlimitX && isPlus(e.deltaX)) ||
-        //   (this.startX - e.deltaX < 0 && !isPlus(e.deltaX))
-        // ) {
-        //   return;
-        // } else {
-        //   dx = this.startX + e.deltaX;
-        // }
-
-        // if (
-        //   (this.startY + e.deltaY > getlimitY && isPlus(e.deltaY)) ||
-        //   (this.startY - e.deltaY < 0 && !isPlus(e.deltaY))
-        // ) {
-        //   return;
-        // } else {
-        //   dy = this.startY + e.deltaY;
-        // }
-
-        dx = this.startX + e.deltaX; // 開始位置 + penの移動値x
-        dy = this.startY + e.deltaY; // 開始位置 + penの移動値y
-
-        this.bitmap.x = dx;
-        this.bitmap.y = dy;
-
-        // ドラッグ操作が終わったら伝達する
-        if (e.isFinal) {
-          this.isStartPan = false;
-        }
-
-        // ある程度時間がたったらPanを終了
-        this.timerPen = window.setTimeout(() => {
-          this.isStartPan = false;
-        }, 300);
-
-        this.stage.addChild(this.bitmap);
-        this.stage.update();
-      }
+      this.onPith(e);
+      this.onPan(e);
     });
   }
 
+  /**
+   * ピンチイン、アウトの処理
+   * @param {Event} e Hummer.jsのイベント
+   */
+  onPith(e) {
+    if (e.type === 'pinch' && !this.isStartPan) {
+      window.clearTimeout(this.timerPinch);
+
+      if (!this.isStartPinch) {
+        this.isStartPinch = !this.isStartPinch;
+      }
+
+      // 0.999 ~ 4までスケール
+      const scale = Math.max(
+        minScall,
+        Math.min(this.scall * e.scale, maxScall)
+      );
+
+      // 画像を拡大
+      this.bitmap.scaleX = scale;
+      this.bitmap.scaleY = scale;
+
+      // ある程度時間がたったらpinchを終了
+      this.timerPinch = window.setTimeout(() => {
+        this.scall = scale;
+        this.isStartPinch = false;
+      }, 300);
+
+      this.stage.addChild(this.bitmap);
+      this.stage.update();
+    }
+  }
+
+  /**
+   * ドラッグ操作の処理
+   * @param {Event} e Hummer.jsのイベント
+   */
+  onPan(e) {
+    // typeがpenかつpinchが動作してない場合
+    if (e.type === 'pan' && !this.isStartPinch) {
+      // 初回のみ
+      if (!this.isStartPan) {
+        // 前回やった画像の位置を格納
+        this.startX = this.bitmap.x;
+        this.startY = this.bitmap.y;
+
+        this.isStartPan = true;
+      }
+
+      window.clearTimeout(this.timerPen);
+
+      let dx; // 画像の移動値x
+      let dy; // 画像の移動値y
+
+      // const getlimitX = this.canvasWidth;
+      // const getlimitY = this.canvasHeight;
+      // const isPlus = num => !!(Math.sign(num) === 1);
+
+      // if (
+      //   (this.startX + e.deltaX > getlimitX && isPlus(e.deltaX)) ||
+      //   (this.startX - e.deltaX < 0 && !isPlus(e.deltaX))
+      // ) {
+      //   return;
+      // } else {
+      //   dx = this.startX + e.deltaX;
+      // }
+
+      // if (
+      //   (this.startY + e.deltaY > getlimitY && isPlus(e.deltaY)) ||
+      //   (this.startY - e.deltaY < 0 && !isPlus(e.deltaY))
+      // ) {
+      //   return;
+      // } else {
+      //   dy = this.startY + e.deltaY;
+      // }
+
+      dx = this.startX + e.deltaX; // 開始位置 + penの移動値x
+      dy = this.startY + e.deltaY; // 開始位置 + penの移動値y
+
+      this.bitmap.x = dx;
+      this.bitmap.y = dy;
+
+      // ドラッグ操作が終わったら伝達する
+      if (e.isFinal) {
+        this.isStartPan = false;
+      }
+
+      // ある程度時間がたったらPanを終了
+      this.timerPen = window.setTimeout(() => {
+        this.isStartPan = false;
+      }, 300);
+
+      this.stage.addChild(this.bitmap);
+      this.stage.update();
+    }
+  }
+
+  /**
+   * ファイルで取得した画像を扱う処理
+   * @param {Event} e ファイルで取得したデータ
+   */
   onInputImage(e) {
     const files = e.target.files[0]; // ファイル情報を取得
 
-    // 何も選択されない場合は返す
+    // 何もファイルを選択されてない場合は返す
     if (!files) {
       return;
     }
@@ -158,9 +176,9 @@ class Camera {
       return;
     }
 
-    // ファイル容量が1MB以上に場合はアラート
-    if (files.size > 1000000) {
-      alert('1MB以上はダメだよー');
+    // ファイル容量が2MB以上に場合はアラート
+    if (files.size > 2000000) {
+      alert('2MB以上はダメだよー');
       return;
     }
 
