@@ -115,6 +115,7 @@ class Camera {
       let dx; // 画像の移動値x
       let dy; // 画像の移動値y
 
+      // 画像の移動を制限
       // const getlimitX = this.canvasWidth;
       // const getlimitY = this.canvasHeight;
       // const isPlus = num => !!(Math.sign(num) === 1);
