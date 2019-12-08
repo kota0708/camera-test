@@ -2,6 +2,14 @@ import EXIF from 'exif-js';
 import { createjs } from '@createjs/easeljs/dist/easeljs.min.js';
 import Hammer from 'hammerjs';
 
+const minScall = 0.999; // 拡大の最低
+const maxScall = 4; // 拡大の最大
+const maxWidth = 500; // メインのcanvasの横サイズ
+
+// コピーcanvasの幅と高さ(APIに送る画像幅と高さになる)
+const copyWidth = 500;
+const copyHeight = 500;
+
 class Camera {
   constructor() {
     this.$$file = document.getElementById('js-file');
@@ -10,32 +18,31 @@ class Camera {
 
     this.$$buttonCopy = document.getElementById('js-button-coppy');
 
-    this.onInputImage = this.onInputImage.bind(this);
-    this.onClickCopy = this.onClickCopy.bind(this);
+    this.stage = null; // メインのステージ
+    this.stageCopy = null; // コピー用のステージ
+    this.bitmap = null; // メインのステージの画像
 
-    this.stage = null;
-    this.stageCopy = null;
-    this.bitmap = null;
-
-    this.canvasWidth = 0;
-    this.canvasHeight = 0;
+    this.canvasWidth = 0; // メインのcanvasのwidth
+    this.canvasHeight = 0; // メインのステージheight
     this.imgWidth = 0;
     this.imgHeight = 0;
 
-    this.startX = 0;
-    this.startY = 0;
+    this.startX = 0; // Panの開始x
+    this.startY = 0; // Panの開始y
 
-    this.scall = 1;
+    this.scall = 1; // Pinchの開始scall
 
-    this.isStartPan = false;
-    this.isStartPinch = false;
+    this.isStartPan = false; // pan中かどうか
+    this.isStartPinch = false; // Pinch中かどうか
 
     this.mc = new Hammer(this.$$canvas);
 
-    this.timerPinch = -1;
-    this.timerPen = -1;
+    this.timerPinch = -1; // Pinchのtimer
+    this.timerPen = -1; // Penのtimer
 
-    console.log(EXIF);
+    // bind系
+    this.onInputImage = this.onInputImage.bind(this);
+    this.onClickCopy = this.onClickCopy.bind(this);
   }
 
   init() {
@@ -49,8 +56,7 @@ class Camera {
     this.$$buttonCopy.addEventListener('click', this.onClickCopy);
 
     this.mc.on('pan pinch', e => {
-      console.log(e);
-
+      // typeがpinchかつpanが動作してない場合
       if (e.type === 'pinch' && !this.isStartPan) {
         window.clearTimeout(this.timerPinch);
 
@@ -58,11 +64,17 @@ class Camera {
           this.isStartPinch = !this.isStartPinch;
         }
 
-        const scale = Math.max(0.999, Math.min(this.scall * e.scale, 4));
+        // 0.999 ~ 4までスケール
+        const scale = Math.max(
+          minScall,
+          Math.min(this.scall * e.scale, maxScall)
+        );
 
+        // 画像を拡大
         this.bitmap.scaleX = scale;
         this.bitmap.scaleY = scale;
 
+        // ある程度時間がたったらpinchを終了
         this.timerPinch = window.setTimeout(() => {
           this.scall = scale;
           this.isStartPinch = false;
@@ -72,8 +84,11 @@ class Camera {
         this.stage.update();
       }
 
+      // typeがpenかつpinchが動作してない場合
       if (e.type === 'pan' && !this.isStartPinch) {
+        // 初回のみ
         if (!this.isStartPan) {
+          // 前回やった画像の位置を格納
           this.startX = this.bitmap.x;
           this.startY = this.bitmap.y;
 
@@ -82,8 +97,8 @@ class Camera {
 
         window.clearTimeout(this.timerPen);
 
-        let dx;
-        let dy;
+        let dx; // 画像の移動値x
+        let dy; // 画像の移動値y
 
         // const getlimitX = this.canvasWidth;
         // const getlimitY = this.canvasHeight;
@@ -107,16 +122,18 @@ class Camera {
         //   dy = this.startY + e.deltaY;
         // }
 
-        dx = this.startX + e.deltaX;
-        dy = this.startY + e.deltaY;
+        dx = this.startX + e.deltaX; // 開始位置 + penの移動値x
+        dy = this.startY + e.deltaY; // 開始位置 + penの移動値y
 
         this.bitmap.x = dx;
         this.bitmap.y = dy;
 
+        // ドラッグ操作が終わったら伝達する
         if (e.isFinal) {
           this.isStartPan = false;
         }
 
+        // ある程度時間がたったらPanを終了
         this.timerPen = window.setTimeout(() => {
           this.isStartPan = false;
         }, 300);
@@ -129,65 +146,72 @@ class Camera {
 
   onInputImage(e) {
     const files = e.target.files[0]; // ファイル情報を取得
+
+    // 何も選択されない場合は返す
     if (!files) {
       return;
     }
 
-    const image = new Image();
-    const newImage = new Image();
+    // 画像以外は受け付けない
+    if (!files.name.match(/.(jpg|jpeg|png)$/i)) {
+      alert('画像以外入れてんじゃねー');
+      return;
+    }
+
+    // ファイル容量が1MB以上に場合はアラート
+    if (files.size > 1000000) {
+      alert('1MB以上はダメだよー');
+      return;
+    }
+
+    const fileImage = new Image(); // fileで読み込んだ画像
+    const getImage = new Image(); // サイズを加工した画像
     const fr = new FileReader();
 
     fr.readAsDataURL(files); // ファイル情報を読み込む
 
     fr.onload = evt => {
-      image.src = evt.target.result; // base64
+      fileImage.src = evt.target.result; // base64
 
-      image.onload = () => {
-        const arrayBuffer = this.base64ToArrayBuffer(image.src);
-        const exif = EXIF.readFromBinaryFile(arrayBuffer);
-
+      fileImage.onload = () => {
         // 画像の高さ / 画像の幅
-        const imgAspect = image.naturalHeight / image.naturalWidth;
+        const imgAspect = fileImage.naturalHeight / fileImage.naturalWidth;
 
-        console.log(exif);
+        this.$$canvas.width = maxWidth; // メインcanvasの幅
 
-        this.$$canvas.width = 500;
+        // メインcanvasの幅によってのアスペクト非を保った画像幅
         this.$$canvas.height = this.$$canvas.width * imgAspect;
 
+        // メインcanvasの幅、高さをキャッシュ
         this.canvasWidth = this.$$canvas.width;
         this.canvasHeight = this.$$canvas.height;
 
-        console.log('imgAspect', imgAspect);
-        console.log('image.naturalWidth', image.naturalWidth);
-        console.log('image.naturalHeight', image.naturalHeight);
-
+        // 一旦画像をcanvasに書き出す
+        // この工程によってバカでかい画像が来ても対応出来る
         const ctx = this.$$canvas.getContext('2d');
-        ctx.drawImage(image, 0, 0, this.canvasWidth, this.canvasHeight);
+        ctx.drawImage(fileImage, 0, 0, this.canvasWidth, this.canvasHeight);
 
-        newImage.src = this.$$canvas.toDataURL('image/png');
+        // canvasに書き出した画像をまたbase64化させる。
+        getImage.src = this.$$canvas.toDataURL('image/png');
 
-        // ctx.transform(-1, 0, 0, 1, this.$$canvas.width, this.$$canvas.height);
-        // ctx.rotate((-90 * Math.PI) / 180);
+        getImage.onload = () => {
+          this.stage = new createjs.Stage(this.$$canvas); // メインcanvasのstage
+          this.stageCopy = new createjs.Stage(this.$$canvasCopy); // コピー用のcanvasのstage
 
-        newImage.onload = () => {
-          this.stage = new createjs.Stage(this.$$canvas);
-          this.stageCopy = new createjs.Stage(this.$$canvasCopy);
-
-          console.log(this.stageCopy);
-
-          this.bitmap = new createjs.Bitmap(newImage);
+          this.bitmap = new createjs.Bitmap(getImage); // メインのcanvasに画像を書き出す
 
           const x = this.bitmap.getBounds().width / 2;
           const y = this.bitmap.getBounds().height / 2;
 
-          console.log(this.bitmap.getBounds().width);
-
+          // 書き出した画像の集点を中心にする
           this.bitmap.x = x;
           this.bitmap.y = y;
           this.bitmap.regX = x;
           this.bitmap.regY = y;
 
-          // this.bitmap.rotation = 90;
+          // Exifを確認する処理
+          const arrayBuffer = this.base64ToArrayBuffer(fileImage.src);
+          const exif = EXIF.readFromBinaryFile(arrayBuffer);
 
           if (exif && exif.Orientation) {
             switch (exif.Orientation) {
@@ -207,37 +231,47 @@ class Camera {
 
           this.stage.addChild(this.bitmap);
           this.stage.update();
-          // this.stageCopy.addChild(this.bitmap);
-          // this.stageCopy.update();
         };
       };
     };
   }
 
+  /**
+   * 書き出した画像を加工する処理
+   */
   onClickCopy() {
-    const image = new Image();
+    // メインのcanvasが何も選択されてない場合は返す
+    if (this.stage === null) {
+      alert('画像を選択してからコピってねー');
+      return;
+    }
+
+    const image = new Image(); // メインのcanvasを画像を格納する箱
 
     const ctx = this.$$canvasCopy.getContext('2d');
-    const testImage = this.$$canvas.toDataURL('image/png');
+    const copyImage = this.$$canvas.toDataURL('image/png');
 
-    this.$$canvasCopy.width = 300;
-    this.$$canvasCopy.height = 300;
+    // コピーcanvasの幅 + 高さをキャッシュさせる
+    this.$$canvasCopy.width = copyWidth;
+    this.$$canvasCopy.height = copyHeight;
 
-    image.src = testImage;
+    image.src = copyImage; // メインcanvasから持ってきた画像を読み込む
 
+    // メインのcanvasの画像幅 or 高さ / 2
     const parentWidth = this.canvasWidth / 2;
     const parentHeight = this.canvasHeight / 2;
 
+    // コピーのcanvasの画像幅 or 高さ / 2
     const childWidth = this.$$canvasCopy.width / 2;
     const childtHeight = this.$$canvasCopy.height / 2;
 
-    console.log(parentWidth - childWidth);
-
+    // 丸くくり抜く処理
     ctx.beginPath();
     ctx.arc(childWidth, childtHeight, childWidth, 0, Math.PI * 2, false);
     ctx.clip();
 
     image.onload = () => {
+      // メインのcanvasからコピーしてくる(コピーcanvasの幅 + 高さの真ん中のみ)
       ctx.drawImage(
         image,
         parentWidth - childWidth,
