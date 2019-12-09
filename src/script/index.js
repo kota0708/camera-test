@@ -208,8 +208,39 @@ class Camera {
 
   // メインcanvasに画像を生成
   createImage(image) {
+    // let compar;
+
+    // if (image.naturalWidth > image.naturalHeight) {
+    //   compar = 'width';
+    // } else if (image.naturalWidth < image.naturalHeight) {
+    //   compar = 'height';
+    // } else {
+    //   compar = 'same';
+    // }
+
+    // console.log('compar', compar);
+    console.log('image.naturalWidth', image.naturalWidth);
+    console.log('image.naturalHeight', image.naturalHeight);
+
     // 画像の高さ / 画像の幅
+    // const imgAspect =
+    //   compar === 'height'
+    //     ? image.naturalWidth / image.naturalHeight
+    //     : image.naturalHeight / image.naturalWidth;
+
     const imgAspect = image.naturalHeight / image.naturalWidth;
+
+    // if (compar === 'height') {
+    //   this.$$canvas.width = this.$$canvas.height * imgAspect; // メインcanvasの幅
+
+    //   // メインcanvasの幅によってのアスペクト非を保った画像幅
+    //   this.$$canvas.height = maxWidth;
+    // } else {
+    //   this.$$canvas.width = maxWidth; // メインcanvasの幅
+
+    //   // メインcanvasの幅によってのアスペクト非を保った画像幅
+    //   this.$$canvas.height = this.$$canvas.width * imgAspect;
+    // }
 
     this.$$canvas.width = maxWidth; // メインcanvasの幅
 
@@ -254,11 +285,11 @@ class Camera {
       const y = this.canvasHeight / 2;
 
       // const radiusX = this.imgWidth / 2;
-      const radiusY = this.imgHeight;
+      // const radiusY = this.imgHeight;
 
       // 書き出した画像の集点を中心にする
       this.bitmap.x = x;
-      this.bitmap.y = y + radiusY;
+      this.bitmap.y = y;
       this.bitmap.regX = x;
       this.bitmap.regY = y;
 
