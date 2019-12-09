@@ -4,7 +4,6 @@ import Hammer from 'hammerjs';
 
 const minScall = 0.999; // 拡大の最低
 const maxScall = 4; // 拡大の最大
-const maxWidth = 500; // メインのcanvasの横サイズ
 
 // コピーcanvasの幅と高さ(APIに送る画像幅と高さになる)
 const copyWidth = 500;
@@ -12,6 +11,7 @@ const copyHeight = 500;
 
 class Camera {
   constructor() {
+    this.$$wrapper = document.getElementById('js-wrapper');
     this.$$file = document.getElementById('js-file');
     this.$$canvas = document.getElementById('js-canvas');
     this.$$canvasCopy = document.getElementById('js-copy');
@@ -27,8 +27,8 @@ class Camera {
 
     this.canvasWidth = 0; // メインのcanvasのwidth
     this.canvasHeight = 0; // メインのステージheight
-    this.imgWidth = 0;
-    this.imgHeight = 0;
+    this.imgWidth = 0; // メインの画像横幅
+    this.imgHeight = 0; // メインの画像縦幅
 
     this.startX = 0; // Panの開始x
     this.startY = 0; // Panの開始y
@@ -122,29 +122,6 @@ class Camera {
       let dx; // 画像の移動値x
       let dy; // 画像の移動値y
 
-      // 画像の移動を制限
-      // const getlimitX = this.canvasWidth;
-      // const getlimitY = this.canvasHeight;
-      // const isPlus = num => !!(Math.sign(num) === 1);
-
-      // if (
-      //   (this.startX + e.deltaX > getlimitX && isPlus(e.deltaX)) ||
-      //   (this.startX - e.deltaX < 0 && !isPlus(e.deltaX))
-      // ) {
-      //   return;
-      // } else {
-      //   dx = this.startX + e.deltaX;
-      // }
-
-      // if (
-      //   (this.startY + e.deltaY > getlimitY && isPlus(e.deltaY)) ||
-      //   (this.startY - e.deltaY < 0 && !isPlus(e.deltaY))
-      // ) {
-      //   return;
-      // } else {
-      //   dy = this.startY + e.deltaY;
-      // }
-
       dx = this.startX + e.deltaX; // 開始位置 + penの移動値x
       dy = this.startY + e.deltaY; // 開始位置 + penの移動値y
 
@@ -184,9 +161,11 @@ class Camera {
       return;
     }
 
+    console.log('size', files.size);
+
     // ファイル容量が2MB以上に場合はアラート
-    if (files.size > 2000000) {
-      alert('2MB以上はダメだよー');
+    if (files.size > 5000000) {
+      alert('5MB以上はダメだよー');
       return;
     }
 
@@ -208,26 +187,66 @@ class Camera {
 
   // メインcanvasに画像を生成
   createImage(image) {
+    let compar;
+
+    // 縦長なのか横長なのか確認
+    if (image.naturalWidth > image.naturalHeight) {
+      compar = 'width';
+    } else if (image.naturalWidth < image.naturalHeight) {
+      compar = 'height';
+    } else {
+      compar = 'same';
+    }
+
+    // Exifを確認する処理
+    const arrayBuffer = this.base64ToArrayBuffer(image.src);
+    const exif = EXIF.readFromBinaryFile(arrayBuffer);
+    const isExif = !!exif.Orientation;
+    const isRotation = !!(exif.Orientation === 6 || exif.Orientation === 8);
+
     // 画像の高さ / 画像の幅
-    const imgAspect = image.naturalHeight / image.naturalWidth;
+    const imgAspect =
+      compar === 'height'
+        ? image.naturalWidth / image.naturalHeight
+        : image.naturalHeight / image.naturalWidth;
 
-    this.$$canvas.width = maxWidth; // メインcanvasの幅
+    if (compar === 'height') {
+      // メインcanvasの幅によってのアスペクト非を保った画像幅
+      this.$$canvas.height = !isExif
+        ? this.$$wrapper.clientHeight
+        : isRotation
+        ? this.$$wrapper.clientWidth
+        : this.$$wrapper.clientHeight;
 
-    // メインcanvasの幅によってのアスペクト非を保った画像幅
-    this.$$canvas.height = this.$$canvas.width * imgAspect;
+      this.$$canvas.width = this.$$canvas.height * imgAspect; // メインcanvasの幅
+    } else {
+      // メインcanvasの幅
+      this.$$canvas.width = !isExif
+        ? this.$$wrapper.clientWidth
+        : isRotation
+        ? this.$$wrapper.clientHeight
+        : this.$$wrapper.clientWidth;
+
+      // メインcanvasの幅によってのアスペクト非を保った画像幅
+      this.$$canvas.height = this.$$canvas.width * imgAspect;
+    }
+
+    if (this.getResizeImage === null) {
+      this.getResizeImage = new Image(); // image objectを生成
+    }
 
     // メインcanvasの幅、高さをキャッシュ
     this.canvasWidth = this.$$canvas.width;
     this.canvasHeight = this.$$canvas.height;
 
+    // メイン画像の幅、高さをキャッシュ
+    this.imgWidth = this.$$canvas.width;
+    this.imgHeight = this.$$canvas.height;
+
     // 一旦画像をcanvasに書き出す
     // この工程によってバカでかい画像が来ても対応出来る
     const ctx = this.$$canvas.getContext('2d');
     ctx.drawImage(image, 0, 0, this.canvasWidth, this.canvasHeight);
-
-    if (this.getResizeImage === null) {
-      this.getResizeImage = new Image(); // image objectを生成
-    }
 
     // canvasに書き出した画像をまたbase64化させる。
     this.getResizeImage.src = this.$$canvas.toDataURL('image/png');
@@ -239,24 +258,40 @@ class Camera {
         this.stage.removeChild(this.bitmap); // 一旦canvasの画像を削除する。
       }
 
+      // canvasのサイズを一旦大きくする
+      this.$$canvas.width = this.$$wrapper.clientWidth;
+      this.canvasWidth = this.$$canvas.width;
+      this.$$canvas.height = this.$$wrapper.clientHeight;
+      this.canvasHeight = this.$$canvas.height;
+
       this.stage = new createjs.Stage(this.$$canvas); // メインcanvasのstage
 
       this.bitmap = new createjs.Bitmap(this.getResizeImage); // メインのcanvasに画像を書き出す
 
-      const x = this.canvasWidth / 2;
-      const y = this.canvasHeight / 2;
+      const x = this.imgWidth / 2;
+      const y = this.imgHeight / 2;
 
-      // 書き出した画像の集点を中心にする
-      this.bitmap.x = x;
-      this.bitmap.y = y;
-      this.bitmap.regX = x;
-      this.bitmap.regY = y;
+      if (isExif && isRotation) {
+        // 書き出した画像の集点を中心にする
+        this.bitmap.x = compar === 'width' ? this.canvasWidth / 2 : x;
+        this.bitmap.y = this.canvasHeight - this.canvasHeight / 2;
+        this.bitmap.regX = x;
+        this.bitmap.regY = y;
+      } else {
+        // 書き出した画像の集点を中心にする
+        this.bitmap.x = compar === 'height' ? this.canvasWidth / 2 : x;
+        this.bitmap.y = this.canvasHeight - this.canvasHeight / 2;
+        this.bitmap.regX = x;
+        this.bitmap.regY = y;
+      }
 
-      // Exifを確認する処理
-      const arrayBuffer = this.base64ToArrayBuffer(image.src);
-      const exif = EXIF.readFromBinaryFile(arrayBuffer);
+      if (this.getResizeImage === null) {
+        this.getResizeImage = new Image(); // image objectを生成
+      }
 
-      if (exif && exif.Orientation) {
+      // this.bitmap.rotation = 90;
+
+      if (isExif) {
         switch (exif.Orientation) {
           case 3:
             this.bitmap.rotation = 180;
@@ -274,6 +309,15 @@ class Camera {
 
       this.stage.addChild(this.bitmap);
       this.stage.update();
+
+      // デバック
+      // console.log('this.$$wrapper.clientWidth', this.$$wrapper.clientWidth);
+      // console.log('this.canvasWidth', this.canvasWidth);
+      // console.log('this.canvasHeight', this.canvasHeight);
+      // console.log('this.imgWidth', this.imgWidth);
+      // console.log('this.imgHeight', this.imgHeight);
+      // console.log('x', x);
+      // console.log('y', y);
     };
   }
 
