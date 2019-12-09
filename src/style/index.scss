@@ -5,6 +5,10 @@ $test: #fff;
 
 .test-canvas {
   display: block;
+
+  &.main {
+    width: 400px;
+  }
 }
 
 .test-input {
