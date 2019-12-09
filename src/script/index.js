@@ -15,12 +15,14 @@ class Camera {
     this.$$file = document.getElementById('js-file');
     this.$$canvas = document.getElementById('js-canvas');
     this.$$canvasCopy = document.getElementById('js-copy');
+    this.$$refresh = document.getElementById('js-refresh');
 
     this.$$buttonCopy = document.getElementById('js-button-coppy');
 
     this.stage = null; // メインのステージ
     this.stageCopy = null; // コピー用のステージ
     this.bitmap = null; // メインのステージの画像
+    this.mainImage = null; // メインの画像を入れる箱
 
     this.canvasWidth = 0; // メインのcanvasのwidth
     this.canvasHeight = 0; // メインのステージheight
@@ -36,6 +38,8 @@ class Camera {
     this.isStartPinch = false; // Pinch中かどうか
 
     this.mc = new Hammer(this.$$canvas);
+
+    this.getImage = null; // リサイズした画像を入れる箱
 
     this.timerPinch = -1; // Pinchのtimer
     this.timerPen = -1; // Penのtimer
@@ -54,6 +58,9 @@ class Camera {
   onListener() {
     this.$$file.addEventListener('change', this.onInputImage);
     this.$$buttonCopy.addEventListener('click', this.onClickCopy);
+    this.$$refresh.addEventListener('click', () => {
+      this.onRefresh(this.$$canvas);
+    });
 
     this.mc.on('pan pinch', e => {
       this.onPith(e);
@@ -188,6 +195,8 @@ class Camera {
     const getImage = new Image(); // サイズを加工した画像
     const fr = new FileReader();
 
+    this.mainImage = fileImage;
+
     fr.readAsDataURL(files); // ファイル情報を読み込む
 
     fr.onload = evt => {
@@ -216,7 +225,6 @@ class Camera {
 
         getImage.onload = () => {
           this.stage = new createjs.Stage(this.$$canvas); // メインcanvasのstage
-          this.stageCopy = new createjs.Stage(this.$$canvasCopy); // コピー用のcanvasのstage
 
           this.bitmap = new createjs.Bitmap(getImage); // メインのcanvasに画像を書き出す
 
@@ -256,6 +264,72 @@ class Camera {
     };
   }
 
+  createImage(image) {
+    // 画像の高さ / 画像の幅
+    const imgAspect = image.naturalHeight / image.naturalWidth;
+
+    this.$$canvas.width = maxWidth; // メインcanvasの幅
+
+    // メインcanvasの幅によってのアスペクト非を保った画像幅
+    this.$$canvas.height = this.$$canvas.width * imgAspect;
+
+    // メインcanvasの幅、高さをキャッシュ
+    this.canvasWidth = this.$$canvas.width;
+    this.canvasHeight = this.$$canvas.height;
+
+    // 一旦画像をcanvasに書き出す
+    // この工程によってバカでかい画像が来ても対応出来る
+    const ctx = this.$$canvas.getContext('2d');
+    ctx.drawImage(image, 0, 0, this.canvasWidth, this.canvasHeight);
+
+    if (this.getImage === null) {
+      this.getImage = new Image(); // サイズを加工した画像
+    }
+
+    // canvasに書き出した画像をまたbase64化させる。
+    this.getImage.src = this.$$canvas.toDataURL('image/png');
+
+    this.getImage.onload = () => {
+      if (this.stage === null) {
+        this.stage = new createjs.Stage(this.$$canvas); // メインcanvasのstage
+      }
+
+      this.bitmap = new createjs.Bitmap(this.getImage); // メインのcanvasに画像を書き出す
+
+      const x = this.canvasWidth / 2;
+      const y = this.canvasHeight / 2;
+
+      // 書き出した画像の集点を中心にする
+      this.bitmap.x = x;
+      this.bitmap.y = y;
+      this.bitmap.regX = x;
+      this.bitmap.regY = y;
+
+      // Exifを確認する処理
+      const arrayBuffer = this.base64ToArrayBuffer(fileImage.src);
+      const exif = EXIF.readFromBinaryFile(arrayBuffer);
+
+      if (exif && exif.Orientation) {
+        switch (exif.Orientation) {
+          case 3:
+            this.bitmap.rotation = 180;
+            break;
+          case 6:
+            this.bitmap.rotation = 90;
+            break;
+          case 8:
+            this.bitmap.rotation = -90;
+            break;
+          default:
+            this.bitmap.rotation = 0;
+        }
+      }
+
+      this.stage.addChild(this.bitmap);
+      this.stage.update();
+    };
+  }
+
   /**
    * 書き出した画像を加工する処理
    */
@@ -265,6 +339,8 @@ class Camera {
       alert('画像を選択してからコピってねー');
       return;
     }
+
+    this.stageCopy = new createjs.Stage(this.$$canvasCopy); // コピー用のcanvasのstage
 
     const image = new Image(); // メインのcanvasを画像を格納する箱
 
@@ -304,6 +380,12 @@ class Camera {
         this.$$canvasCopy.height
       );
     };
+  }
+
+  // canvasをリフレッシュ
+  onRefresh(canvas) {
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
   }
 
   base64ToArrayBuffer(base64) {
