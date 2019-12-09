@@ -241,6 +241,10 @@ class Camera {
       this.$$canvas.height = this.$$canvas.width * imgAspect;
     }
 
+    if (this.getResizeImage === null) {
+      this.getResizeImage = new Image(); // image objectを生成
+    }
+
     // メインcanvasの幅、高さをキャッシュ
     this.canvasWidth = this.$$canvas.width;
     this.canvasHeight = this.$$canvas.height;
@@ -253,10 +257,6 @@ class Camera {
     // この工程によってバカでかい画像が来ても対応出来る
     const ctx = this.$$canvas.getContext('2d');
     ctx.drawImage(image, 0, 0, this.canvasWidth, this.canvasHeight);
-
-    if (this.getResizeImage === null) {
-      this.getResizeImage = new Image(); // image objectを生成
-    }
 
     // canvasに書き出した画像をまたbase64化させる。
     this.getResizeImage.src = this.$$canvas.toDataURL('image/png');
@@ -283,12 +283,10 @@ class Camera {
 
       this.bitmap = new createjs.Bitmap(this.getResizeImage); // メインのcanvasに画像を書き出す
 
-      const x = this.canvasWidth / 2;
-      const y = this.canvasHeight / 2;
+      const x = this.imgWidth / 2;
+      const y = this.imgHeight / 2;
 
-      const radiusX = x - this.imgWidth / 2;
-      const radiusY = y - this.imgHeight / 2;
-
+      console.log('this.$$wrapper.clientWidth', this.$$wrapper.clientWidth);
       console.log('this.canvasWidth', this.canvasWidth);
       console.log('this.canvasHeight', this.canvasHeight);
       console.log('this.imgWidth', this.imgWidth);
@@ -297,10 +295,16 @@ class Camera {
       console.log('y', y);
 
       // 書き出した画像の集点を中心にする
-      this.bitmap.x = compar === 'height' ? x + radiusX : x;
-      this.bitmap.y = compar === 'width' ? y + radiusY : y;
+      this.bitmap.x = compar === 'height' ? this.canvasWidth / 2 : x;
+      this.bitmap.y = compar === 'width' ? this.canvasHeight / 2 : y;
       this.bitmap.regX = x;
       this.bitmap.regY = y;
+
+      if (this.getResizeImage === null) {
+        this.getResizeImage = new Image(); // image objectを生成
+      }
+
+      // this.bitmap.rotation = 90;
 
       // Exifを確認する処理
       const arrayBuffer = this.base64ToArrayBuffer(image.src);
