@@ -201,7 +201,7 @@ class Camera {
       this.mainImage.src = evt.target.result; // base64
 
       this.mainImage.onload = () => {
-        this.createImage(this.mainImage);
+        this.createImage(this.mainImage); // メインのcanvasに画像を生成
       };
     };
   }
