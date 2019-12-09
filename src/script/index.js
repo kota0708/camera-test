@@ -23,6 +23,7 @@ class Camera {
     this.stageCopy = null; // コピー用のステージ
     this.bitmap = null; // メインのステージの画像
     this.mainImage = null; // メインの画像を入れる箱
+    this.getResizeImage = null; // リサイズした画像を入れるimage object
 
     this.canvasWidth = 0; // メインのcanvasのwidth
     this.canvasHeight = 0; // メインのステージheight
@@ -38,8 +39,6 @@ class Camera {
     this.isStartPinch = false; // Pinch中かどうか
 
     this.mc = new Hammer(this.$$canvas);
-
-    this.getImage = null; // リサイズした画像を入れる箱
 
     this.timerPinch = -1; // Pinchのtimer
     this.timerPen = -1; // Penのtimer
@@ -191,79 +190,23 @@ class Camera {
       return;
     }
 
-    const fileImage = new Image(); // fileで読み込んだ画像
-    const getImage = new Image(); // サイズを加工した画像
+    if (this.mainImage === null) {
+      this.mainImage = new Image(); // fileで読み込んだ画像
+    }
     const fr = new FileReader();
-
-    this.mainImage = fileImage;
 
     fr.readAsDataURL(files); // ファイル情報を読み込む
 
     fr.onload = evt => {
-      fileImage.src = evt.target.result; // base64
+      this.mainImage.src = evt.target.result; // base64
 
-      fileImage.onload = () => {
-        // 画像の高さ / 画像の幅
-        const imgAspect = fileImage.naturalHeight / fileImage.naturalWidth;
-
-        this.$$canvas.width = maxWidth; // メインcanvasの幅
-
-        // メインcanvasの幅によってのアスペクト非を保った画像幅
-        this.$$canvas.height = this.$$canvas.width * imgAspect;
-
-        // メインcanvasの幅、高さをキャッシュ
-        this.canvasWidth = this.$$canvas.width;
-        this.canvasHeight = this.$$canvas.height;
-
-        // 一旦画像をcanvasに書き出す
-        // この工程によってバカでかい画像が来ても対応出来る
-        const ctx = this.$$canvas.getContext('2d');
-        ctx.drawImage(fileImage, 0, 0, this.canvasWidth, this.canvasHeight);
-
-        // canvasに書き出した画像をまたbase64化させる。
-        getImage.src = this.$$canvas.toDataURL('image/png');
-
-        getImage.onload = () => {
-          this.stage = new createjs.Stage(this.$$canvas); // メインcanvasのstage
-
-          this.bitmap = new createjs.Bitmap(getImage); // メインのcanvasに画像を書き出す
-
-          const x = this.bitmap.getBounds().width / 2;
-          const y = this.bitmap.getBounds().height / 2;
-
-          // 書き出した画像の集点を中心にする
-          this.bitmap.x = x;
-          this.bitmap.y = y;
-          this.bitmap.regX = x;
-          this.bitmap.regY = y;
-
-          // Exifを確認する処理
-          const arrayBuffer = this.base64ToArrayBuffer(fileImage.src);
-          const exif = EXIF.readFromBinaryFile(arrayBuffer);
-
-          if (exif && exif.Orientation) {
-            switch (exif.Orientation) {
-              case 3:
-                this.bitmap.rotation = 180;
-                break;
-              case 6:
-                this.bitmap.rotation = 90;
-                break;
-              case 8:
-                this.bitmap.rotation = -90;
-                break;
-              default:
-                this.bitmap.rotation = 0;
-            }
-          }
-
-          this.stage.addChild(this.bitmap);
-          this.stage.update();
-        };
+      this.mainImage.onload = () => {
+        this.createImage(this.mainImage);
       };
     };
   }
 
+  // メインcanvasに画像を生成
   createImage(image) {
     // 画像の高さ / 画像の幅
     const imgAspect = image.naturalHeight / image.naturalWidth;
@@ -282,19 +225,19 @@ class Camera {
     const ctx = this.$$canvas.getContext('2d');
     ctx.drawImage(image, 0, 0, this.canvasWidth, this.canvasHeight);
 
-    if (this.getImage === null) {
-      this.getImage = new Image(); // サイズを加工した画像
+    if (this.getResizeImage === null) {
+      this.getResizeImage = new Image(); // image objectを生成
     }
 
     // canvasに書き出した画像をまたbase64化させる。
-    this.getImage.src = this.$$canvas.toDataURL('image/png');
+    this.getResizeImage.src = this.$$canvas.toDataURL('image/png');
 
-    this.getImage.onload = () => {
+    this.getResizeImage.onload = () => {
       if (this.stage === null) {
         this.stage = new createjs.Stage(this.$$canvas); // メインcanvasのstage
       }
 
-      this.bitmap = new createjs.Bitmap(this.getImage); // メインのcanvasに画像を書き出す
+      this.bitmap = new createjs.Bitmap(this.getResizeImage); // メインのcanvasに画像を書き出す
 
       const x = this.canvasWidth / 2;
       const y = this.canvasHeight / 2;
@@ -306,7 +249,7 @@ class Camera {
       this.bitmap.regY = y;
 
       // Exifを確認する処理
-      const arrayBuffer = this.base64ToArrayBuffer(fileImage.src);
+      const arrayBuffer = this.base64ToArrayBuffer(image.src);
       const exif = EXIF.readFromBinaryFile(arrayBuffer);
 
       if (exif && exif.Orientation) {
