@@ -236,7 +236,7 @@ class Camera {
       if (this.stage === null) {
         this.stage = new createjs.Stage(this.$$canvas); // メインcanvasのstage
       } else {
-        this.stage.removeChild(this.bitmap);
+        this.stage.removeChild(this.bitmap); // 一旦canvasの画像を削除する。
       }
 
       this.stage = new createjs.Stage(this.$$canvas); // メインcanvasのstage
