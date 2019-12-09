@@ -4,7 +4,6 @@ import Hammer from 'hammerjs';
 
 const minScall = 0.999; // 拡大の最低
 const maxScall = 4; // 拡大の最大
-const maxWidth = 500; // メインのcanvasの横サイズ
 
 // コピーcanvasの幅と高さ(APIに送る画像幅と高さになる)
 const copyWidth = 500;
@@ -184,9 +183,11 @@ class Camera {
       return;
     }
 
+    console.log('size', files.size);
+
     // ファイル容量が2MB以上に場合はアラート
-    if (files.size > 2000000) {
-      alert('2MB以上はダメだよー');
+    if (files.size > 5000000) {
+      alert('5MB以上はダメだよー');
       return;
     }
 
@@ -208,44 +209,36 @@ class Camera {
 
   // メインcanvasに画像を生成
   createImage(image) {
-    // let compar;
+    let compar;
 
-    // if (image.naturalWidth > image.naturalHeight) {
-    //   compar = 'width';
-    // } else if (image.naturalWidth < image.naturalHeight) {
-    //   compar = 'height';
-    // } else {
-    //   compar = 'same';
-    // }
+    // 縦長なのか横長なのか確認
+    if (image.naturalWidth > image.naturalHeight) {
+      compar = 'width';
+    } else if (image.naturalWidth < image.naturalHeight) {
+      compar = 'height';
+    } else {
+      compar = 'same';
+    }
 
-    // console.log('compar', compar);
-    console.log('image.naturalWidth', image.naturalWidth);
-    console.log('image.naturalHeight', image.naturalHeight);
+    console.log('compar', compar);
 
     // 画像の高さ / 画像の幅
-    // const imgAspect =
-    //   compar === 'height'
-    //     ? image.naturalWidth / image.naturalHeight
-    //     : image.naturalHeight / image.naturalWidth;
+    const imgAspect =
+      compar === 'height'
+        ? image.naturalWidth / image.naturalHeight
+        : image.naturalHeight / image.naturalWidth;
 
-    const imgAspect = image.naturalHeight / image.naturalWidth;
+    if (compar === 'height') {
+      // メインcanvasの幅によってのアスペクト非を保った画像幅
+      this.$$canvas.height = this.$$canvas.clientHeight;
 
-    // if (compar === 'height') {
-    //   this.$$canvas.width = this.$$canvas.height * imgAspect; // メインcanvasの幅
+      this.$$canvas.width = this.$$canvas.height * imgAspect; // メインcanvasの幅
+    } else {
+      this.$$canvas.width = this.$$canvas.clientWidth; // メインcanvasの幅
 
-    //   // メインcanvasの幅によってのアスペクト非を保った画像幅
-    //   this.$$canvas.height = maxWidth;
-    // } else {
-    //   this.$$canvas.width = maxWidth; // メインcanvasの幅
-
-    //   // メインcanvasの幅によってのアスペクト非を保った画像幅
-    //   this.$$canvas.height = this.$$canvas.width * imgAspect;
-    // }
-
-    this.$$canvas.width = maxWidth; // メインcanvasの幅
-
-    // メインcanvasの幅によってのアスペクト非を保った画像幅
-    this.$$canvas.height = this.$$canvas.width * imgAspect;
+      // メインcanvasの幅によってのアスペクト非を保った画像幅
+      this.$$canvas.height = this.$$canvas.width * imgAspect;
+    }
 
     // メインcanvasの幅、高さをキャッシュ
     this.canvasWidth = this.$$canvas.width;
@@ -274,8 +267,14 @@ class Camera {
         this.stage.removeChild(this.bitmap); // 一旦canvasの画像を削除する。
       }
 
-      this.$$canvas.height = 500;
-      this.canvasHeight = this.$$canvas.height;
+      // canvasのサイズを一旦大きくする
+      if (compar === 'height') {
+        this.$$canvas.width = 500;
+        this.canvasWidth = this.$$canvas.width;
+      } else {
+        this.$$canvas.height = 500;
+        this.canvasHeight = this.$$canvas.height;
+      }
 
       this.stage = new createjs.Stage(this.$$canvas); // メインcanvasのstage
 
@@ -284,12 +283,12 @@ class Camera {
       const x = this.canvasWidth / 2;
       const y = this.canvasHeight / 2;
 
-      // const radiusX = this.imgWidth / 2;
-      // const radiusY = this.imgHeight;
+      const radiusX = x - this.imgWidth / 2;
+      const radiusY = y - this.imgHeight / 2;
 
       // 書き出した画像の集点を中心にする
-      this.bitmap.x = x;
-      this.bitmap.y = y;
+      this.bitmap.x = compar === 'height' ? x + radiusX : x;
+      this.bitmap.y = compar === 'width' ? y + radiusY : y;
       this.bitmap.regX = x;
       this.bitmap.regY = y;
 
