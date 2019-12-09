@@ -11,6 +11,7 @@ const copyHeight = 500;
 
 class Camera {
   constructor() {
+    this.$$wrapper = document.getElementById('js-wrapper');
     this.$$file = document.getElementById('js-file');
     this.$$canvas = document.getElementById('js-canvas');
     this.$$canvasCopy = document.getElementById('js-copy');
@@ -230,11 +231,11 @@ class Camera {
 
     if (compar === 'height') {
       // メインcanvasの幅によってのアスペクト非を保った画像幅
-      this.$$canvas.height = this.$$canvas.clientHeight;
+      this.$$canvas.height = this.$$wrapper.clientHeight;
 
       this.$$canvas.width = this.$$canvas.height * imgAspect; // メインcanvasの幅
     } else {
-      this.$$canvas.width = this.$$canvas.clientWidth; // メインcanvasの幅
+      this.$$canvas.width = this.$$wrapper.clientWidth; // メインcanvasの幅
 
       // メインcanvasの幅によってのアスペクト非を保った画像幅
       this.$$canvas.height = this.$$canvas.width * imgAspect;
@@ -267,12 +268,14 @@ class Camera {
         this.stage.removeChild(this.bitmap); // 一旦canvasの画像を削除する。
       }
 
+      console.log('this.$$wrapper.clientHeight', this.$$wrapper.clientHeight);
+
       // canvasのサイズを一旦大きくする
       if (compar === 'height') {
-        this.$$canvas.width = 500;
+        this.$$canvas.width = this.$$wrapper.clientWidth;
         this.canvasWidth = this.$$canvas.width;
       } else {
-        this.$$canvas.height = 500;
+        this.$$canvas.height = this.$$wrapper.clientHeight;
         this.canvasHeight = this.$$canvas.height;
       }
 
@@ -285,6 +288,13 @@ class Camera {
 
       const radiusX = x - this.imgWidth / 2;
       const radiusY = y - this.imgHeight / 2;
+
+      console.log('this.canvasWidth', this.canvasWidth);
+      console.log('this.canvasHeight', this.canvasHeight);
+      console.log('this.imgWidth', this.imgWidth);
+      console.log('this.imgHeight', this.imgHeight);
+      console.log('x', x);
+      console.log('y', y);
 
       // 書き出した画像の集点を中心にする
       this.bitmap.x = compar === 'height' ? x + radiusX : x;
