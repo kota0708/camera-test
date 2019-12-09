@@ -3,11 +3,19 @@
 
 $test: #fff;
 
+.warpper {
+  width: 90%;
+  max-width: 500px;
+  height: 500px;
+  margin: 0 auto;
+  background-color: #ccc;
+}
+
 .test-canvas {
   display: block;
 
   &.main {
-    width: 400px;
+    width: 100%;
   }
 }
 
