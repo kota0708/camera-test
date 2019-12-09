@@ -27,8 +27,8 @@ class Camera {
 
     this.canvasWidth = 0; // メインのcanvasのwidth
     this.canvasHeight = 0; // メインのステージheight
-    this.imgWidth = 0;
-    this.imgHeight = 0;
+    this.imgWidth = 0; // メインの画像横幅
+    this.imgHeight = 0; // メインの画像縦幅
 
     this.startX = 0; // Panの開始x
     this.startY = 0; // Panの開始y
@@ -220,6 +220,10 @@ class Camera {
     this.canvasWidth = this.$$canvas.width;
     this.canvasHeight = this.$$canvas.height;
 
+    // メイン画像の幅、高さをキャッシュ
+    this.imgWidth = this.$$canvas.width;
+    this.imgHeight = this.$$canvas.height;
+
     // 一旦画像をcanvasに書き出す
     // この工程によってバカでかい画像が来ても対応出来る
     const ctx = this.$$canvas.getContext('2d');
@@ -239,6 +243,9 @@ class Camera {
         this.stage.removeChild(this.bitmap); // 一旦canvasの画像を削除する。
       }
 
+      this.$$canvas.height = 500;
+      this.canvasHeight = this.$$canvas.height;
+
       this.stage = new createjs.Stage(this.$$canvas); // メインcanvasのstage
 
       this.bitmap = new createjs.Bitmap(this.getResizeImage); // メインのcanvasに画像を書き出す
@@ -246,9 +253,12 @@ class Camera {
       const x = this.canvasWidth / 2;
       const y = this.canvasHeight / 2;
 
+      // const radiusX = this.imgWidth / 2;
+      const radiusY = this.imgHeight;
+
       // 書き出した画像の集点を中心にする
       this.bitmap.x = x;
-      this.bitmap.y = y;
+      this.bitmap.y = y + radiusY;
       this.bitmap.regX = x;
       this.bitmap.regY = y;
 
