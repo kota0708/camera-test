@@ -235,7 +235,11 @@ class Camera {
     this.getResizeImage.onload = () => {
       if (this.stage === null) {
         this.stage = new createjs.Stage(this.$$canvas); // メインcanvasのstage
+      } else {
+        this.stage.removeChild(this.bitmap);
       }
+
+      this.stage = new createjs.Stage(this.$$canvas); // メインcanvasのstage
 
       this.bitmap = new createjs.Bitmap(this.getResizeImage); // メインのcanvasに画像を書き出す
 
