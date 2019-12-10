@@ -74,7 +74,7 @@ class Camera {
         alert('画像を選択してから削除してね');
         return;
       }
-      this.onRefresh(this.$$canvas);
+      this.onRefresh();
     });
 
     this.mc.on('pan pinch', e => {
@@ -88,6 +88,10 @@ class Camera {
    * @param {Event} e Hummer.jsのイベント
    */
   onPith(e) {
+    if (this.stage === null) {
+      return;
+    }
+
     // typeがpinchかつpanが動作してない場合
     if (e.type === 'pinch' && !this.isStartPan) {
       window.clearTimeout(this.timerPinch);
@@ -122,6 +126,10 @@ class Camera {
    * @param {Event} e Hummer.jsのイベント
    */
   onPan(e) {
+    if (this.stage === null) {
+      return;
+    }
+
     // typeがpenかつpinchが動作してない場合
     if (e.type === 'pan' && !this.isStartPinch) {
       // 初回のみ
@@ -351,10 +359,12 @@ class Camera {
   }
 
   // canvasをリフレッシュ
-  onRefresh(canvas) {
-    const ctx = canvas.getContext('2d');
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+  onRefresh() {
     this.stage.removeChild(this.bitmap); // 一旦canvasの画像を削除する。
+    this.stage.update();
+
+    this.stage = null;
+    this.getResizeImage = null;
   }
 
   base64ToArrayBuffer(base64) {
