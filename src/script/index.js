@@ -1,6 +1,7 @@
 import EXIF from 'exif-js';
 import { createjs } from '@createjs/easeljs/dist/easeljs.min.js';
 import Hammer from 'hammerjs';
+import { smoothscroll } from './_smooth-scroll';
 
 const minScall = 0.999; // 拡大の最低
 const maxScall = 4; // 拡大の最大
@@ -344,6 +345,8 @@ class Camera {
         this.$$canvasCopy.width,
         this.$$canvasCopy.height
       );
+
+      smoothscroll(600);
     };
   }
 
@@ -351,6 +354,7 @@ class Camera {
   onRefresh(canvas) {
     const ctx = canvas.getContext('2d');
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+    this.stage.removeChild(this.bitmap); // 一旦canvasの画像を削除する。
   }
 
   base64ToArrayBuffer(base64) {
