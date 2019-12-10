@@ -6,8 +6,8 @@ const minScall = 0.999; // 拡大の最低
 const maxScall = 4; // 拡大の最大
 
 // コピーcanvasの幅と高さ(APIに送る画像幅と高さになる)
-const copyWidth = 500;
-const copyHeight = 500;
+const copyWidth = 200;
+const copyHeight = 200;
 
 class Camera {
   constructor() {
@@ -38,7 +38,7 @@ class Camera {
     this.isStartPan = false; // pan中かどうか
     this.isStartPinch = false; // Pinch中かどうか
 
-    this.mc = new Hammer(this.$$canvas);
+    this.mc = new Hammer(this.$$wrapper);
 
     this.timerPinch = -1; // Pinchのtimer
     this.timerPen = -1; // Penのtimer
@@ -57,7 +57,22 @@ class Camera {
   onListener() {
     this.$$file.addEventListener('change', this.onInputImage);
     this.$$buttonCopy.addEventListener('click', this.onClickCopy);
+    window.addEventListener('resize', () => {
+      // canvasのサイズをwrapperに合わせる
+      this.$$canvas.width = this.$$wrapper.clientWidth;
+      this.canvasWidth = this.$$canvas.width;
+      this.$$canvas.height = this.$$wrapper.clientHeight;
+      this.canvasHeight = this.$$canvas.height;
+
+      if (this.stage !== null) {
+        this.stage.update();
+      }
+    });
     this.$$refresh.addEventListener('click', () => {
+      if (this.stage === null) {
+        alert('画像を選択してから削除してね');
+        return;
+      }
       this.onRefresh(this.$$canvas);
     });
 
@@ -250,8 +265,6 @@ class Camera {
       this.bitmap.regX = x;
       this.bitmap.regY = y;
 
-      this.bitmap.rotation = 90;
-
       if (isExif) {
         switch (exif.Orientation) {
           case 3:
@@ -288,7 +301,7 @@ class Camera {
   onClickCopy() {
     // メインのcanvasが何も選択されてない場合は返す
     if (this.stage === null) {
-      alert('画像を選択してからコピってねー');
+      alert('画像を選択してから選んでね');
       return;
     }
 
@@ -314,9 +327,9 @@ class Camera {
     const childtHeight = this.$$canvasCopy.height / 2;
 
     // 丸くくり抜く処理
-    ctx.beginPath();
-    ctx.arc(childWidth, childtHeight, childWidth, 0, Math.PI * 2, false);
-    ctx.clip();
+    // ctx.beginPath();
+    // ctx.arc(childWidth, childtHeight, childWidth, 0, Math.PI * 2, false);
+    // ctx.clip();
 
     image.onload = () => {
       // メインのcanvasからコピーしてくる(コピーcanvasの幅 + 高さの真ん中のみ)

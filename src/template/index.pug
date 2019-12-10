@@ -7,12 +7,17 @@ block vars
 block main
   .camera-wrap
     .camera-inner
-      p iPhoneで縦向きに撮った写真を選択してください。
-      button#js-button-coppy.test-button
-        | コピーするよー
-      button#js-refresh.test-button
-        | 全部削除
-      input#js-file.test-input(type='file', name='file')
+      h1.camera-title Camera Mock
+      .camera-control-wrap
+        label.test-label
+          | choose
+          input#js-file.test-input(type='file', name='file')
+        button#js-refresh.test-button
+          | Delete
+        button#js-button-coppy.test-button
+          | decision
       #js-wrapper.warpper
         canvas#js-canvas.test-canvas.main
-      canvas#js-copy.test-canvas
+      p.camera-description 選択した画像は下にでるよ
+      .warpper-test
+        canvas#js-copy.test-canvas
