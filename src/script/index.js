@@ -187,17 +187,6 @@ class Camera {
 
   // メインcanvasに画像を生成
   createImage(image) {
-    let compar;
-
-    // 縦長なのか横長なのか確認
-    if (image.naturalWidth > image.naturalHeight) {
-      compar = 'width';
-    } else if (image.naturalWidth < image.naturalHeight) {
-      compar = 'height';
-    } else {
-      compar = 'same';
-    }
-
     // Exifを確認する処理
     const arrayBuffer = this.base64ToArrayBuffer(image.src);
     const exif = EXIF.readFromBinaryFile(arrayBuffer);
@@ -205,31 +194,17 @@ class Camera {
     const isRotation = !!(exif.Orientation === 6 || exif.Orientation === 8);
 
     // 画像の高さ / 画像の幅
-    const imgAspect =
-      compar === 'height'
-        ? image.naturalWidth / image.naturalHeight
-        : image.naturalHeight / image.naturalWidth;
+    const imgAspect = image.naturalHeight / image.naturalWidth;
 
-    if (compar === 'height') {
-      // メインcanvasの幅によってのアスペクト非を保った画像幅
-      this.$$canvas.height = !isExif
-        ? this.$$wrapper.clientHeight
-        : isRotation
-        ? this.$$wrapper.clientWidth
-        : this.$$wrapper.clientHeight;
+    // メインcanvasの幅
+    this.$$canvas.width = !isExif
+      ? this.$$wrapper.clientWidth
+      : isRotation // Exifによって90°曲がっている場合
+      ? this.$$wrapper.clientHeight
+      : this.$$wrapper.clientWidth;
 
-      this.$$canvas.width = this.$$canvas.height * imgAspect; // メインcanvasの幅
-    } else {
-      // メインcanvasの幅
-      this.$$canvas.width = !isExif
-        ? this.$$wrapper.clientWidth
-        : isRotation
-        ? this.$$wrapper.clientHeight
-        : this.$$wrapper.clientWidth;
-
-      // メインcanvasの幅によってのアスペクト非を保った画像幅
-      this.$$canvas.height = this.$$canvas.width * imgAspect;
-    }
+    // メインcanvasの幅によってのアスペクト非を保った画像幅
+    this.$$canvas.height = this.$$canvas.width * imgAspect;
 
     if (this.getResizeImage === null) {
       this.getResizeImage = new Image(); // image objectを生成
@@ -258,38 +233,24 @@ class Camera {
         this.stage.removeChild(this.bitmap); // 一旦canvasの画像を削除する。
       }
 
-      // canvasのサイズを一旦大きくする
+      // canvasのサイズをwrapperに合わせる
       this.$$canvas.width = this.$$wrapper.clientWidth;
       this.canvasWidth = this.$$canvas.width;
       this.$$canvas.height = this.$$wrapper.clientHeight;
       this.canvasHeight = this.$$canvas.height;
-
-      this.stage = new createjs.Stage(this.$$canvas); // メインcanvasのstage
 
       this.bitmap = new createjs.Bitmap(this.getResizeImage); // メインのcanvasに画像を書き出す
 
       const x = this.imgWidth / 2;
       const y = this.imgHeight / 2;
 
-      if (isExif && isRotation) {
-        // 書き出した画像の集点を中心にする
-        this.bitmap.x = compar === 'width' ? this.canvasWidth / 2 : x;
-        this.bitmap.y = this.canvasHeight - this.canvasHeight / 2;
-        this.bitmap.regX = x;
-        this.bitmap.regY = y;
-      } else {
-        // 書き出した画像の集点を中心にする
-        this.bitmap.x = compar === 'height' ? this.canvasWidth / 2 : x;
-        this.bitmap.y = this.canvasHeight - this.canvasHeight / 2;
-        this.bitmap.regX = x;
-        this.bitmap.regY = y;
-      }
+      // 書き出した画像の集点を中心にする
+      this.bitmap.x = this.canvasWidth - this.canvasWidth / 2;
+      this.bitmap.y = this.canvasHeight - this.canvasHeight / 2;
+      this.bitmap.regX = x;
+      this.bitmap.regY = y;
 
-      if (this.getResizeImage === null) {
-        this.getResizeImage = new Image(); // image objectを生成
-      }
-
-      // this.bitmap.rotation = 90;
+      this.bitmap.rotation = 90;
 
       if (isExif) {
         switch (exif.Orientation) {
