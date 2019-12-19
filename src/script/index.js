@@ -44,6 +44,8 @@ class Camera {
     this.timerPinch = -1; // Pinchのtimer
     this.timerPen = -1; // Penのtimer
 
+    this.ratio = window.devicePixelRatio ? window.devicePixelRatio : 1;
+
     // bind系
     this.onInputImage = this.onInputImage.bind(this);
     this.onClickCopy = this.onClickCopy.bind(this);
@@ -146,8 +148,8 @@ class Camera {
       let dx; // 画像の移動値x
       let dy; // 画像の移動値y
 
-      dx = this.startX + e.deltaX; // 開始位置 + penの移動値x
-      dy = this.startY + e.deltaY; // 開始位置 + penの移動値y
+      dx = this.startX + e.deltaX * this.ratio; // 開始位置 + penの移動値x
+      dy = this.startY + e.deltaY * this.ratio; // 開始位置 + penの移動値y
 
       this.bitmap.x = dx;
       this.bitmap.y = dy;
@@ -227,6 +229,8 @@ class Camera {
       ? this.$$wrapper.clientHeight
       : this.$$wrapper.clientWidth;
 
+    this.$$canvas.width *= this.ratio; // レティーナ対応
+
     // メインcanvasの幅によってのアスペクト非を保った画像幅
     this.$$canvas.height = this.$$canvas.width * imgAspect;
 
@@ -258,9 +262,9 @@ class Camera {
       }
 
       // canvasのサイズをwrapperに合わせる
-      this.$$canvas.width = this.$$wrapper.clientWidth;
+      this.$$canvas.width = this.$$wrapper.clientWidth * this.ratio;
       this.canvasWidth = this.$$canvas.width;
-      this.$$canvas.height = this.$$wrapper.clientHeight;
+      this.$$canvas.height = this.$$wrapper.clientHeight * this.ratio;
       this.canvasHeight = this.$$canvas.height;
 
       this.bitmap = new createjs.Bitmap(this.getResizeImage); // メインのcanvasに画像を書き出す
@@ -337,7 +341,7 @@ class Camera {
 
     // 丸くくり抜く処理
     // ctx.beginPath();
-    // ctx.arc(childWidth, childtHeight, childWidth, 0, Math.PI * 2, false);
+    // ctx.arc(childWidth, childtHeight, childWidth, 0, Math.PI * this.ratio, false);
     // ctx.clip();
 
     image.onload = () => {
